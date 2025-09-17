@@ -80,5 +80,4 @@ async def get_current_user(
     user["_id"] = str(user["_id"])
     return user
 
-# Optional import for type hints
 from typing import Optional
