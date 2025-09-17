@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -16,20 +16,50 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import { mockTournaments, mockStats } from '../mock';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const Profile = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
+      return;
     }
+
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get(`${API}/users/profile`);
+        setProfileData(response.data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
   }, [isAuthenticated, navigate]);
 
   if (!isAuthenticated) {
     return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        </div>
+        <p className="text-slate-600">Cargando perfil...</p>
+      </div>
+    );
   }
 
   const handleLogout = () => {
@@ -37,13 +67,11 @@ const Profile = () => {
     navigate('/');
   };
 
-  // Mock user statistics
-  const userTournaments = mockTournaments.filter(t => t.organizer === user.username);
-  const userStats = {
-    tournamentsCreated: userTournaments.length,
-    tournamentsWon: 3,
-    tournamentsParticipated: 12,
-    totalPrizes: '$2,500'
+  const userTournaments = profileData?.tournaments || [];
+  const userStats = profileData?.stats || {
+    tournamentsCreated: 0,
+    tournamentsParticipated: 0,
+    tournamentsWon: 0
   };
 
   const formatDate = (dateString) => {
