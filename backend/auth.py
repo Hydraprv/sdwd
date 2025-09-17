@@ -79,5 +79,3 @@ async def get_current_user(
     # Convert ObjectId to string for JSON serialization
     user["_id"] = str(user["_id"])
     return user
-
-from typing import Optional
