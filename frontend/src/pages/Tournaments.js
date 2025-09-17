@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Badge } from '../components/ui/badge';
 import TournamentCard from '../components/TournamentCard';
-import { mockTournaments, mockGames } from '../mock';
+import { mockGames } from '../mock';
 import { Search, Filter, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const Tournaments = () => {
   const { isAuthenticated } = useAuth();
@@ -15,6 +19,36 @@ const Tournaments = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGame, setSelectedGame] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [tournaments, setTournaments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTournaments();
+  }, [selectedGame, selectedStatus, searchTerm]);
+
+  const fetchTournaments = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      
+      if (selectedGame !== 'all') {
+        params.append('game', selectedGame);
+      }
+      if (selectedStatus !== 'all') {
+        params.append('status', selectedStatus);
+      }
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
+
+      const response = await axios.get(`${API}/tournaments?${params.toString()}`);
+      setTournaments(response.data.tournaments);
+    } catch (error) {
+      console.error('Error fetching tournaments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const statusOptions = [
     { value: 'all', label: 'Todos los Estados' },
@@ -29,23 +63,15 @@ const Tournaments = () => {
     completed: 'Completado'
   };
 
-  const filteredTournaments = mockTournaments.filter(tournament => {
-    const matchesSearch = tournament.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tournament.game.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tournament.organizer.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesGame = selectedGame === 'all' || tournament.game === selectedGame;
-    const matchesStatus = selectedStatus === 'all' || tournament.status === selectedStatus;
-    
-    return matchesSearch && matchesGame && matchesStatus;
-  });
+  // Tournaments are already filtered by the API
+  const filteredTournaments = tournaments;
 
   const getStatusCounts = () => {
     return {
-      all: mockTournaments.length,
-      registration: mockTournaments.filter(t => t.status === 'registration').length,
-      active: mockTournaments.filter(t => t.status === 'active').length,
-      completed: mockTournaments.filter(t => t.status === 'completed').length
+      all: tournaments.length,
+      registration: tournaments.filter(t => t.status === 'registration').length,
+      active: tournaments.filter(t => t.status === 'active').length,
+      completed: tournaments.filter(t => t.status === 'completed').length
     };
   };
 
@@ -99,7 +125,14 @@ const Tournaments = () => {
               <Input
                 placeholder="Buscar torneos, juegos o organizadores..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  // Debounce search to avoid too many API calls
+                  clearTimeout(window.searchTimeout);
+                  window.searchTimeout = setTimeout(() => {
+                    fetchTournaments();
+                  }, 500);
+                }}
                 className="pl-10"
               />
             </div>
@@ -132,7 +165,14 @@ const Tournaments = () => {
           </p>
         </div>
 
-        {filteredTournaments.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+            </div>
+            <p className="text-slate-600">Cargando torneos...</p>
+          </div>
+        ) : filteredTournaments.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
               <Search className="h-8 w-8 text-slate-400" />
