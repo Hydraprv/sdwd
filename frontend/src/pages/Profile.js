@@ -104,8 +104,8 @@ const Profile = () => {
                 </Avatar>
                 
                 <div>
-                  <h2 className="text-xl font-semibold text-slate-900">{user.username}</h2>
-                  <p className="text-slate-600">{user.email}</p>
+                  <h2 className="text-xl font-semibold text-slate-900">{profileData?.user?.username || user?.username}</h2>
+                  <p className="text-slate-600">{profileData?.user?.email || user?.email}</p>
                 </div>
 
                 <div className="flex justify-center gap-2">
