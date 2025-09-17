@@ -185,7 +185,7 @@ const Profile = () => {
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-teal-600">
-                    {userStats.totalPrizes}
+                    ${(userStats.tournamentsWon * 850).toLocaleString()}
                   </div>
                   <div className="text-sm text-slate-600">Premios Ganados</div>
                 </div>
