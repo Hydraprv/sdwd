@@ -266,7 +266,7 @@ const Profile = () => {
                 <User className="h-5 w-5 text-slate-500" />
                 <div>
                   <p className="text-sm text-slate-500">Nombre de Usuario</p>
-                  <p className="font-medium">{user.username}</p>
+                  <p className="font-medium">{profileData?.user?.username}</p>
                 </div>
               </div>
 
