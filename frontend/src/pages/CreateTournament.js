@@ -11,6 +11,10 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { useToast } from '../hooks/use-toast';
 import { mockGames } from '../mock';
 import { Plus, Calendar, Users, Trophy, FileText, User, Loader2 } from 'lucide-react';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const CreateTournament = () => {
   const { user, isAuthenticated } = useAuth();
@@ -123,8 +127,21 @@ const CreateTournament = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Convert form data to API format
+      const tournamentData = {
+        name: formData.name,
+        game: formData.game,
+        description: formData.description,
+        rules: formData.rules,
+        maxParticipants: parseInt(formData.maxParticipants),
+        prize: formData.prize,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        registrationDeadline: new Date(formData.registrationDeadline).toISOString(),
+        judges: formData.judges.split(',').map(j => j.trim()).filter(j => j.length > 0)
+      };
+
+      const response = await axios.post(`${API}/tournaments`, tournamentData);
       
       toast({
         title: "¡Torneo Creado!",
@@ -133,9 +150,10 @@ const CreateTournament = () => {
       
       navigate('/tournaments');
     } catch (error) {
+      console.error('Error creating tournament:', error);
       toast({
         title: "Error",
-        description: "Hubo un problema al crear el torneo. Inténtalo de nuevo.",
+        description: error.response?.data?.detail || "Hubo un problema al crear el torneo. Inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
