@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Trophy, Users, Calendar, TrendingUp, Gamepad2, Zap } from 'lucide-react';
+import { Trophy, Users, Calendar, TrendingUp, Gamepad2, Zap, Plus } from 'lucide-react';
 import { mockStats, mockTournaments } from '../mock';
 
 const Home = () => {
