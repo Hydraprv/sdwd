@@ -1,17 +1,46 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Trophy, Users, Calendar, TrendingUp, Gamepad2, Zap, Plus } from 'lucide-react';
-import { mockStats, mockTournaments } from '../mock';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const Home = () => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalTournaments: 0,
+    activeTournaments: 0,
+    totalPlayers: 0,
+    totalPrizePool: '$0'
+  });
+  const [featuredTournaments, setFeaturedTournaments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const featuredTournaments = mockTournaments.filter(t => t.status === 'registration').slice(0, 3);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch platform stats
+        const statsResponse = await axios.get(`${API}/stats`);
+        setStats(statsResponse.data);
+
+        // Fetch tournaments for featured section
+        const tournamentsResponse = await axios.get(`${API}/tournaments?status=registration`);
+        setFeaturedTournaments(tournamentsResponse.data.tournaments.slice(0, 3));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const features = [
     {
@@ -97,19 +126,19 @@ const Home = () => {
       <section className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="text-center">
-            <div className="text-3xl font-bold text-emerald-600">{mockStats.totalTournaments}</div>
+            <div className="text-3xl font-bold text-emerald-600">{stats.totalTournaments}</div>
             <div className="text-sm text-slate-600 mt-1">Torneos Totales</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-teal-600">{mockStats.activeTournaments}</div>
+            <div className="text-3xl font-bold text-teal-600">{stats.activeTournaments}</div>
             <div className="text-sm text-slate-600 mt-1">Torneos Activos</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-slate-700">{mockStats.totalPlayers.toLocaleString()}</div>
+            <div className="text-3xl font-bold text-slate-700">{stats.totalPlayers.toLocaleString()}</div>
             <div className="text-sm text-slate-600 mt-1">Jugadores</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold text-amber-600">{mockStats.totalPrizePool}</div>
+            <div className="text-3xl font-bold text-amber-600">{stats.totalPrizePool}</div>
             <div className="text-sm text-slate-600 mt-1">Premios Totales</div>
           </div>
         </div>
