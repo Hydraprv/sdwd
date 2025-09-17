@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/button';
@@ -17,15 +17,45 @@ import {
   ArrowLeft,
   UserPlus
 } from 'lucide-react';
-import { mockTournaments } from '../mock';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const TournamentDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [tournament, setTournament] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
 
-  const tournament = mockTournaments.find(t => t.id === parseInt(id));
+  useEffect(() => {
+    const fetchTournament = async () => {
+      try {
+        const response = await axios.get(`${API}/tournaments/${id}`);
+        setTournament(response.data.tournament);
+      } catch (error) {
+        console.error('Error fetching tournament:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTournament();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
+        </div>
+        <p className="text-slate-600">Cargando torneo...</p>
+      </div>
+    );
+  }
 
   if (!tournament) {
     return (
@@ -61,7 +91,7 @@ const TournamentDetails = () => {
     });
   };
 
-  const handleJoinTournament = () => {
+  const handleJoinTournament = async () => {
     if (!isAuthenticated) {
       toast({
         title: "Inicia Sesión",
@@ -72,10 +102,23 @@ const TournamentDetails = () => {
       return;
     }
 
-    toast({
-      title: "¡Te has unido!",
-      description: `Te has registrado exitosamente en ${tournament.name}.`,
-    });
+    setJoining(true);
+    try {
+      const response = await axios.post(`${API}/tournaments/${id}/join`);
+      setTournament(response.data.tournament);
+      toast({
+        title: "¡Te has unido!",
+        description: response.data.message,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.detail || "No se pudo unir al torneo.",
+        variant: "destructive",
+      });
+    } finally {
+      setJoining(false);
+    }
   };
 
   const canJoin = tournament.status === 'registration' && 
@@ -109,10 +152,20 @@ const TournamentDetails = () => {
           <Button 
             size="lg"
             onClick={handleJoinTournament}
+            disabled={joining}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
           >
-            <UserPlus className="mr-2 h-5 w-5" />
-            Unirse al Torneo
+            {joining ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Uniéndose...
+              </>
+            ) : (
+              <>
+                <UserPlus className="mr-2 h-5 w-5" />
+                Unirse al Torneo
+              </>
+            )}
           </Button>
         )}
       </div>
@@ -182,7 +235,7 @@ const TournamentDetails = () => {
                 <User className="h-5 w-5 text-slate-500" />
                 <div>
                   <p className="text-sm text-slate-500">Organizador</p>
-                  <p className="font-medium">{tournament.organizer}</p>
+                  <p className="font-medium">{tournament.organizerName}</p>
                 </div>
               </div>
 
@@ -193,7 +246,7 @@ const TournamentDetails = () => {
                 <div>
                   <p className="text-sm text-slate-500">Participantes</p>
                   <p className="font-medium">
-                    {tournament.participants} / {tournament.maxParticipants}
+                    {tournament.participants.length} / {tournament.maxParticipants}
                   </p>
                 </div>
               </div>
@@ -255,7 +308,7 @@ const TournamentDetails = () => {
             <CardContent className="pt-6">
               {tournament.status === 'registration' ? (
                 <div className="text-center">
-                  {tournament.participants < tournament.maxParticipants ? (
+                  {tournament.participants.length < tournament.maxParticipants ? (
                     <div className="space-y-3">
                       <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                         <UserPlus className="h-6 w-6 text-green-600" />
@@ -263,7 +316,7 @@ const TournamentDetails = () => {
                       <div>
                         <p className="font-medium text-green-800">Inscripciones Abiertas</p>
                         <p className="text-sm text-green-600">
-                          {tournament.maxParticipants - tournament.participants} lugares disponibles
+                          {tournament.maxParticipants - tournament.participants.length} lugares disponibles
                         </p>
                       </div>
                     </div>
