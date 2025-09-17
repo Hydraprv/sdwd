@@ -276,7 +276,7 @@ const Profile = () => {
                 <Mail className="h-5 w-5 text-slate-500" />
                 <div>
                   <p className="text-sm text-slate-500">Correo Electrónico</p>
-                  <p className="font-medium">{user.email}</p>
+                  <p className="font-medium">{profileData?.user?.email}</p>
                 </div>
               </div>
 
